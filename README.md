@@ -108,7 +108,7 @@ npm ci
 npm run check
 ```
 
-Checks cover lint, formatting, strict types, tests and the npm package contents. `npm run build` compiles `src/tui.tsx` to `dist/tui.js` without bundling the host's OpenTUI or Solid. Commit the rebuilt `dist/` when source changes so that GitHub installs do not need build tools. To test a checkout, use its absolute directory as the `package` in `cli.json`.
+Checks cover lint, formatting, strict types, tests and the npm package contents. `npm run build:entry` compiles `src/tui.tsx` to `dist/tui.js` without bundling the host's OpenTUI or Solid. Commit the rebuilt `dist/` when source changes so GitHub installs don't need build tools. Don't add a `build` or `prepare` script: OpenCode's Git installer treats those as a signal to prepare the checkout instead of using the shipped entry. To test a checkout, use its absolute directory as the `package` in `cli.json`.
 
 ## Release
 
