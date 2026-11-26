@@ -13,6 +13,19 @@ import { Plugin } from "@opencode/plugin/tui";
 import { fg, link, MouseButton, t, underline } from "@opentui/core";
 import { createEffect, createMemo, createRenderEffect, createSignal, onCleanup, Show } from "solid-js";
 
+// src/color.ts
+import { RGBA } from "@opentui/core";
+var LIGHT_MODE_DARKEN = 0.6;
+function readable(color, mode) {
+  if (mode !== "light") return color;
+  return RGBA.fromValues(
+    color.r * LIGHT_MODE_DARKEN,
+    color.g * LIGHT_MODE_DARKEN,
+    color.b * LIGHT_MODE_DARKEN,
+    color.a
+  );
+}
+
 // src/gh.ts
 import { execFile } from "node:child_process";
 
@@ -370,6 +383,7 @@ function Widget(props) {
     tracker: tracker2
   } = props;
   const theme = context.theme;
+  const success = () => readable(theme.text.feedback.success.base, context.themeMode);
   const [view, setView] = createSignal();
   const [hover, setHover] = createSignal(false);
   const directory = createMemo(() => {
@@ -480,7 +494,8 @@ function Widget(props) {
         const tone = () => footerTone(value().pr, value().stale);
         const color = () => {
           const status = tone();
-          return status === "muted" ? theme.text.muted : theme.text.feedback[status].base;
+          if (status === "muted") return theme.text.muted;
+          return status === "success" ? success() : theme.text.feedback[status].base;
         };
         return (() => {
           var _el$ = _$createElement("text");
@@ -589,7 +604,7 @@ function Widget(props) {
           _$insert(_el$17, () => checks().running);
           _$effect((_p$) => {
             var _v$ = theme.text.muted, _v$2 = {
-              fg: theme.text.feedback.success.base
+              fg: success()
             }, _v$3 = {
               fg: theme.text.feedback.error.base
             }, _v$4 = {
