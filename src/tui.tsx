@@ -18,6 +18,7 @@ import {
   onCleanup,
   Show,
 } from "solid-js"
+import { readable } from "./color"
 import { github } from "./gh"
 import { footerTone, formatPr, mergeOptions, parseOptions, type Options } from "./pr"
 import { openSettings } from "./settings"
@@ -43,6 +44,7 @@ function Widget(props: {
 }) {
   const { context, options, gh, tracker } = props
   const theme = context.theme
+  const success = () => readable(theme.text.feedback.success.base, context.themeMode)
   const [view, setView] = createSignal<View>()
   const [hover, setHover] = createSignal(false)
   const directory = createMemo(() => {
@@ -165,7 +167,8 @@ function Widget(props: {
           const tone = () => footerTone(value().pr, value().stale)
           const color = () => {
             const status = tone()
-            return status === "muted" ? theme.text.muted : theme.text.feedback[status].base
+            if (status === "muted") return theme.text.muted
+            return status === "success" ? success() : theme.text.feedback[status].base
           }
           return (
             <text
@@ -245,7 +248,7 @@ function Widget(props: {
             >
               {(checks) => (
                 <text fg={theme.text.muted} wrapMode="word">
-                  <span style={{ fg: theme.text.feedback.success.base }}>{checks().passed}</span>
+                  <span style={{ fg: success() }}>{checks().passed}</span>
                   {"  "}
                   <span style={{ fg: theme.text.feedback.error.base }}>{checks().failed}</span>
                   {"  "}
