@@ -5,6 +5,7 @@ import {
   footerTone,
   formatPr,
   parseBranch,
+  mergeOptions,
   parseOptions,
   parsePr,
 } from "../src/pr"
@@ -160,6 +161,18 @@ test("parses symbolic-ref output and defensively clamps option values", () => {
   assert.equal(parseOptions({ interval: 1_000 }).interval, 600)
   assert.equal(parseOptions({ interval: Infinity }).interval, 30)
   assert.equal(parseOptions({ interval: 22.6 }).interval, 23)
+})
+
+test("merges a settings change over current values and re-sanitizes", () => {
+  assert.deepEqual(mergeOptions({ placement: "footer", compact: true }, { interval: 1_000 }), {
+    enabled: true,
+    interval: 600,
+    placement: "footer",
+    compact: true,
+    showNoPr: false,
+  })
+  assert.equal(mergeOptions(undefined, { enabled: false }).enabled, false)
+  assert.equal(mergeOptions({ interval: 90 }, { showNoPr: true }).interval, 90)
 })
 
 test("derives footer color from conflicts, failures, pending checks and terminal PR states", () => {

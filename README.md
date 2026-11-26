@@ -53,51 +53,19 @@ Open an OpenCode session in a branch with a GitHub PR. If the terminal is too na
 - `SKIPPED` and `NEUTRAL` are omitted, not reported as passed. Cancelled, timed-out and action-required checks are failures. Pending, queued, in-progress and unrecognized outcomes are counted as running.
 - A branch with no PR is normally silent. So are detached HEAD, non-Git directories, and missing or unauthenticated `gh`. After a failed refresh, the last successful PR is marked `(stale)` in the sidebar (muted in the footer) for at most 15 minutes.
 
-### Configuration
+### Settings
 
-`opencode plugin add` puts this TUI-only plugin in `~/.config/opencode/cli.json` (or `$XDG_CONFIG_HOME/opencode/cli.json`). Replace the matching string entry with an object to configure it:
+Run `/pr-status` (or **GitHub PR status settings** in the command palette, `Ctrl+P`) to change settings from the TUI. Pick a row to toggle it; changes apply immediately. Settings are saved in OpenCode's plugin storage, so they persist across restarts and apply to every session and every running TUI, not just the current one.
 
-Sidebar:
+| Setting           | Default | Meaning                                                                      |
+| ----------------- | ------- | ---------------------------------------------------------------------------- |
+| Show PR status    | On      | Turn the widget and all polling off or on.                                   |
+| Placement         | Sidebar | Show the full status in the sidebar, or only the number below the prompt.    |
+| Compact           | Off     | Sidebar only: show only the PR number, state, conflicts (if any) and counts. |
+| Show “No PR” hint | Off     | Sidebar only: show a muted hint when `gh` explicitly reports no PR.          |
+| Refresh interval  | 30      | Seconds between open-PR refreshes; rounded and clamped to 15–600.            |
 
-```jsonc
-{
-  "$schema": "https://opencode.ai/v2/cli.json",
-  "plugins": [
-    {
-      "package": "github:championswimmer/opencode-gh-pr-status",
-      "options": {
-        "enabled": true,
-        "interval": 30,
-        "placement": "sidebar",
-        "compact": false,
-        "showNoPr": false,
-      },
-    },
-  ],
-}
-```
-
-Footer (instead of the sidebar):
-
-```jsonc
-{
-  "$schema": "https://opencode.ai/v2/cli.json",
-  "plugins": [
-    {
-      "package": "github:championswimmer/opencode-gh-pr-status",
-      "options": { "placement": "footer" },
-    },
-  ],
-}
-```
-
-| Option      | Default     | Meaning                                                                                                   |
-| ----------- | ----------- | --------------------------------------------------------------------------------------------------------- |
-| `enabled`   | `true`      | Set to `false` to disable the widget and all polling.                                                     |
-| `interval`  | `30`        | Seconds between open-PR refreshes; rounded and clamped to 15–600.                                         |
-| `placement` | `"sidebar"` | Use `"footer"` to show only the number below the session prompt. Unknown values fall back to `"sidebar"`. |
-| `compact`   | `false`     | Sidebar only: show only the PR number, state, conflicts (if any) and counts.                              |
-| `showNoPr`  | `false`     | Sidebar only: show a muted hint when `gh` explicitly reports no PR.                                       |
+The plugin no longer reads `options` from `cli.json`. If you configured it there earlier, those options are ignored; set them with `/pr-status` instead.
 
 While the selected widget is mounted, the plugin checks the local branch every five seconds. Results are cached in memory by checkout and branch. Branches with no PR retry at most every two minutes; closed or merged PRs retry at most every five minutes. Errors back off up to 15 minutes. Polling stops when the widget unmounts and pauses on terminal blur when the terminal reports focus events.
 
