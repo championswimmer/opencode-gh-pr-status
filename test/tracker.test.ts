@@ -65,7 +65,7 @@ function harness() {
         return reply()
       },
     },
-    30,
+    () => 30,
     () => time,
   )
   return {

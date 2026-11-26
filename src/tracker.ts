@@ -19,9 +19,8 @@ export const BRANCH_POLL_MS = 5_000
 const STALE_MS = 15 * 60_000
 const MAX_ENTRIES = 32
 
-export function tracker(source: Source, intervalSeconds: number, now = Date.now) {
+export function tracker(source: Source, intervalSeconds: () => number, now = Date.now) {
   const entries = new Map<string, Entry>()
-  const interval = intervalSeconds * 1_000
 
   function display(entry: Entry | undefined): View {
     if (!entry || (entry.failures && now() - entry.goodAt >= STALE_MS)) return
@@ -48,6 +47,7 @@ export function tracker(source: Source, intervalSeconds: number, now = Date.now)
       if (signal.aborted) return
 
       const time = now()
+      const interval = intervalSeconds() * 1_000
       let entry: Entry
       if (result.kind === "found") {
         const cadence = result.pr.state === "OPEN" ? interval : Math.max(300_000, interval)

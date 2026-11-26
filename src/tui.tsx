@@ -19,7 +19,8 @@ import {
   Show,
 } from "solid-js"
 import { github } from "./gh"
-import { footerTone, formatPr, parseOptions, type Options } from "./pr"
+import { footerTone, formatPr, mergeOptions, parseOptions, type Options } from "./pr"
+import { openSettings } from "./settings"
 import { BRANCH_POLL_MS, tracker, type View } from "./tracker"
 
 type Github = ReturnType<typeof github>
@@ -35,7 +36,8 @@ function linkedContent(row: TextRenderable, content: () => StyledText) {
 function Widget(props: {
   context: Plugin.Context
   sessionID: string
-  options: Options
+  options: () => Options
+  placement: Options["placement"]
   gh: Github
   tracker: Tracker
 }) {
@@ -57,7 +59,7 @@ function Widget(props: {
   })
   const formatted = createMemo(() => {
     const value = found()
-    return value && formatPr(value.pr, options.compact)
+    return value && formatPr(value.pr, options().compact)
   })
 
   createEffect(() => {
@@ -156,7 +158,7 @@ function Widget(props: {
     ],
   }))
 
-  if (options.placement === "footer") {
+  if (props.placement === "footer") {
     return (
       <Show when={found()}>
         {(value) => {
@@ -188,13 +190,13 @@ function Widget(props: {
 
   return (
     <>
-      <Show when={options.showNoPr && view()?.kind === "none"}>
+      <Show when={options().showNoPr && view()?.kind === "none"}>
         <text fg={theme.text.muted}>No PR for this branch</text>
       </Show>
       <Show when={formatted()}>
         {(pr) => (
           <box flexDirection="column" flexShrink={0}>
-            <Show when={!options.compact}>
+            <Show when={!options().compact}>
               <text fg={theme.text.base}>
                 <b>GitHub PR</b>
               </text>
@@ -216,7 +218,7 @@ function Widget(props: {
                   linkedContent(
                     row,
                     () =>
-                      t`${options.compact ? "PR " : ""}${link(pr().url)(
+                      t`${options().compact ? "PR " : ""}${link(pr().url)(
                         underline(
                           fg(hover() ? theme.text.base : theme.text.feedback.info.base)(
                             pr().number,
@@ -261,26 +263,60 @@ function Widget(props: {
 export default Plugin.define({
   id: "opencode-gh-pr-status",
   setup(context) {
-    const options = parseOptions(context.options)
-    if (!options.enabled) return
-    const gh = github()
-    const cache = tracker(gh, options.interval)
-    const render = (sessionID: string) => (
-      <Widget context={context} sessionID={sessionID} options={options} gh={gh} tracker={cache} />
-    )
-    if (options.placement === "footer") {
-      return context.ui.slot({
-        append: "prompt.footer.status",
-        render: (props) => (
-          <Show when={props.sessionID} keyed>
-            {render}
-          </Show>
-        ),
-      })
-    }
-    return context.ui.slot({
-      append: "sidebar.content",
-      render: (props) => render(props.sessionID),
+    const [stored, mutate] = context.storage.store<Options>("settings", {
+      initial: parseOptions(undefined),
     })
+    const options = () => parseOptions(stored)
+    const update = (change: Partial<Options>) =>
+      mutate((draft) => {
+        Object.assign(draft, mergeOptions(draft, change))
+      })
+
+    context.keymap.layer(() => ({
+      mode: "global",
+      commands: [
+        {
+          id: "opencode-gh-pr-status.settings",
+          title: "GitHub PR status settings",
+          group: "GitHub",
+          palette: true,
+          slash: { name: "pr-status" },
+          run: () => void openSettings(context, options, update),
+        },
+      ],
+    }))
+
+    const gh = github()
+    const cache = tracker(gh, () => options().interval)
+    const widget = (sessionID: string, placement: Options["placement"]) => (
+      <Widget
+        context={context}
+        sessionID={sessionID}
+        options={options}
+        placement={placement}
+        gh={gh}
+        tracker={cache}
+      />
+    )
+    const footer = context.ui.slot({
+      append: "prompt.footer.status",
+      render: (props) => (
+        <Show when={options().enabled && options().placement === "footer" && props.sessionID} keyed>
+          {(sessionID) => widget(sessionID, "footer")}
+        </Show>
+      ),
+    })
+    const sidebar = context.ui.slot({
+      append: "sidebar.content",
+      render: (props) => (
+        <Show when={options().enabled && options().placement === "sidebar"}>
+          {widget(props.sessionID, "sidebar")}
+        </Show>
+      ),
+    })
+    return () => {
+      footer()
+      sidebar()
+    }
   },
 })

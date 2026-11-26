@@ -11,6 +11,7 @@ function record(value: unknown): Record<string, unknown> | undefined {
   return value as Record<string, unknown>
 }
 
+// Sanitizes persisted settings, so a hand-edited or outdated store can't break the widget.
 export function parseOptions(value: unknown): Options {
   const options = record(value)
   const interval = options?.interval
@@ -24,6 +25,10 @@ export function parseOptions(value: unknown): Options {
     compact: options?.compact === true,
     showNoPr: options?.showNoPr === true,
   }
+}
+
+export function mergeOptions(current: unknown, change: Partial<Options>): Options {
+  return parseOptions({ ...parseOptions(current), ...change })
 }
 
 // git symbolic-ref --quiet --short HEAD reports detached HEAD via its exit status.

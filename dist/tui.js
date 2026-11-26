@@ -32,6 +32,9 @@ function parseOptions(value) {
     showNoPr: options?.showNoPr === true
   };
 }
+function mergeOptions(current, change) {
+  return parseOptions({ ...parseOptions(current), ...change });
+}
 function parseBranch(stdout) {
   const name = stdout.replace(/\r?\n$/, "");
   return name && !/[\s\p{Cc}]/u.test(name) ? name : void 0;
@@ -223,13 +226,77 @@ function github(run = runCommand) {
   };
 }
 
+// src/settings.ts
+var onOff = (value) => value ? "On" : "Off";
+async function openSettings(context, read, update) {
+  let selected;
+  for (; ; ) {
+    const options = read();
+    selected = await context.ui.dialog.select({
+      title: "GitHub PR status",
+      current: selected,
+      options: [
+        {
+          title: "Show PR status",
+          value: "enabled",
+          footer: onOff(options.enabled),
+          description: "Turn the widget and all polling on or off"
+        },
+        {
+          title: "Placement",
+          value: "placement",
+          footer: options.placement === "footer" ? "Prompt footer" : "Sidebar",
+          description: "Where the PR is shown"
+        },
+        {
+          title: "Compact",
+          value: "compact",
+          footer: onOff(options.compact),
+          description: "Sidebar only: show just the number, state and counts"
+        },
+        {
+          title: "Show \u201CNo PR\u201D hint",
+          value: "showNoPr",
+          footer: onOff(options.showNoPr),
+          description: "Sidebar only: show a hint when the branch has no PR"
+        },
+        {
+          title: "Refresh interval",
+          value: "interval",
+          footer: `${options.interval}s`,
+          description: "Seconds between open-PR refreshes (15\u2013600)"
+        }
+      ]
+    });
+    if (!selected) return;
+    if (selected === "enabled") await update({ enabled: !options.enabled });
+    else if (selected === "compact") await update({ compact: !options.compact });
+    else if (selected === "showNoPr") await update({ showNoPr: !options.showNoPr });
+    else if (selected === "placement")
+      await update({ placement: options.placement === "footer" ? "sidebar" : "footer" });
+    else {
+      const input = await context.ui.dialog.prompt({
+        title: "Refresh interval",
+        description: "Seconds between open-PR refreshes, from 15 to 600.",
+        value: String(options.interval)
+      });
+      if (input === void 0) continue;
+      const seconds = input.trim() ? Number(input) : Number.NaN;
+      if (!Number.isFinite(seconds)) {
+        context.ui.toast.show({ message: "Enter a number of seconds.", variant: "warning" });
+        continue;
+      }
+      await update({ interval: seconds });
+    }
+  }
+}
+
 // src/tracker.ts
 var BRANCH_POLL_MS = 5e3;
 var STALE_MS = 15 * 6e4;
 var MAX_ENTRIES = 32;
 function tracker(source, intervalSeconds, now = Date.now) {
   const entries = /* @__PURE__ */ new Map();
-  const interval = intervalSeconds * 1e3;
   function display(entry) {
     if (!entry || entry.failures && now() - entry.goodAt >= STALE_MS) return;
     return entry.view;
@@ -251,6 +318,7 @@ function tracker(source, intervalSeconds, now = Date.now) {
       }
       if (signal.aborted) return;
       const time = now();
+      const interval = intervalSeconds() * 1e3;
       let entry;
       if (result.kind === "found") {
         const cadence = result.pr.state === "OPEN" ? interval : Math.max(3e5, interval);
@@ -315,7 +383,7 @@ function Widget(props) {
   });
   const formatted = createMemo(() => {
     const value = found();
-    return value && formatPr(value.pr, options.compact);
+    return value && formatPr(value.pr, options().compact);
   });
   createEffect(() => {
     const cwd = directory();
@@ -403,7 +471,7 @@ function Widget(props) {
       run: openPr
     }]
   }));
-  if (options.placement === "footer") {
+  if (props.placement === "footer") {
     return _$createComponent(Show, {
       get when() {
         return found();
@@ -430,7 +498,7 @@ function Widget(props) {
   }
   return [_$createComponent(Show, {
     get when() {
-      return _$memo(() => !!options.showNoPr)() && view()?.kind === "none";
+      return _$memo(() => !!options().showNoPr)() && view()?.kind === "none";
     },
     get children() {
       var _el$2 = _$createElement("text");
@@ -449,7 +517,7 @@ function Widget(props) {
       _$setProp(_el$4, "flexShrink", 0);
       _$insert(_el$4, _$createComponent(Show, {
         get when() {
-          return !options.compact;
+          return !options().compact;
         },
         get children() {
           var _el$5 = _$createElement("text"), _el$6 = _$createElement("b");
@@ -466,7 +534,7 @@ function Widget(props) {
       _$setProp(_el$8, "onMouseDown", startClick);
       _$setProp(_el$8, "onMouseDrag", cancelClick);
       _$setProp(_el$8, "onMouseUp", openOnClick);
-      _$use((row) => linkedContent(row, () => t`${options.compact ? "PR " : ""}${link(pr().url)(underline(fg(hover() ? theme.text.base : theme.text.feedback.info.base)(pr().number)))} ${pr().state}${found()?.stale ? " (stale)" : ""}`), _el$9);
+      _$use((row) => linkedContent(row, () => t`${options().compact ? "PR " : ""}${link(pr().url)(underline(fg(hover() ? theme.text.base : theme.text.feedback.info.base)(pr().number)))} ${pr().state}${found()?.stale ? " (stale)" : ""}`), _el$9);
       _$setProp(_el$9, "wrapMode", "none");
       _$setProp(_el$9, "truncate", true);
       _$setProp(_el$9, "selectable", false);
@@ -549,33 +617,61 @@ function Widget(props) {
 var tui_default = Plugin.define({
   id: "opencode-gh-pr-status",
   setup(context) {
-    const options = parseOptions(context.options);
-    if (!options.enabled) return;
+    const [stored, mutate] = context.storage.store("settings", {
+      initial: parseOptions(void 0)
+    });
+    const options = () => parseOptions(stored);
+    const update = (change) => mutate((draft) => {
+      Object.assign(draft, mergeOptions(draft, change));
+    });
+    context.keymap.layer(() => ({
+      mode: "global",
+      commands: [{
+        id: "opencode-gh-pr-status.settings",
+        title: "GitHub PR status settings",
+        group: "GitHub",
+        palette: true,
+        slash: {
+          name: "pr-status"
+        },
+        run: () => void openSettings(context, options, update)
+      }]
+    }));
     const gh = github();
-    const cache = tracker(gh, options.interval);
-    const render = (sessionID) => _$createComponent(Widget, {
+    const cache = tracker(gh, () => options().interval);
+    const widget = (sessionID, placement) => _$createComponent(Widget, {
       context,
       sessionID,
       options,
+      placement,
       gh,
       tracker: cache
     });
-    if (options.placement === "footer") {
-      return context.ui.slot({
-        append: "prompt.footer.status",
-        render: (props) => _$createComponent(Show, {
-          get when() {
-            return props.sessionID;
-          },
-          keyed: true,
-          children: render
-        })
-      });
-    }
-    return context.ui.slot({
-      append: "sidebar.content",
-      render: (props) => render(props.sessionID)
+    const footer = context.ui.slot({
+      append: "prompt.footer.status",
+      render: (props) => _$createComponent(Show, {
+        get when() {
+          return _$memo(() => !!(options().enabled && options().placement === "footer"))() && props.sessionID;
+        },
+        keyed: true,
+        children: (sessionID) => widget(sessionID, "footer")
+      })
     });
+    const sidebar = context.ui.slot({
+      append: "sidebar.content",
+      render: (props) => _$createComponent(Show, {
+        get when() {
+          return _$memo(() => !!options().enabled)() && options().placement === "sidebar";
+        },
+        get children() {
+          return widget(props.sessionID, "sidebar");
+        }
+      })
+    });
+    return () => {
+      footer();
+      sidebar();
+    };
   }
 });
 export {
