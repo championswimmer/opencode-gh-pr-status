@@ -1,0 +1,63 @@
+{
+  "name": "opencode-gh-pr-status",
+  "version": "0.1.0",
+  "description": "GitHub PR and CI status for your current branch in the OpenCode v2 TUI",
+  "keywords": [
+    "github",
+    "opencode",
+    "opencode-plugin",
+    "opencode-tui-plugin",
+    "pull-request"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/championswimmer/opencode-gh-pr-status.git"
+  },
+  "files": [
+    "dist"
+  ],
+  "type": "module",
+  "exports": {
+    "./tui": "./dist/tui.js"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "check": "npm run lint && npm run format:check && npm run typecheck && npm test && npm run build && npm pack --dry-run --ignore-scripts",
+    "format": "oxfmt .",
+    "format:check": "oxfmt --check .",
+    "lint": "oxlint .",
+    "test": "node --import tsx --test test/*.test.ts",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "npm run check"
+  },
+  "dependencies": {
+    "@opencode/plugin": "2.4.1"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.29.0",
+    "@babel/preset-typescript": "^7.27.1",
+    "@opencode/theme": "2.4.1",
+    "@opentui/core": "0.9.4",
+    "@opentui/solid": "0.9.4",
+    "@types/node": "^24.0.0",
+    "babel-preset-solid": "1.9.16",
+    "esbuild": "^0.28.0",
+    "oxfmt": "^0.80.0",
+    "oxlint": "^1.80.0",
+    "solid-js": "1.9.17",
+    "tsx": "^4.20.0",
+    "typescript": "^5.9.0"
+  },
+  "peerDependencies": {
+    "@opentui/core": ">=0.9.4 <1",
+    "@opentui/solid": ">=0.9.4 <1",
+    "solid-js": ">=1.9.0 <2"
+  },
+  "engines": {
+    "opencode": ">=2.4.1 <3"
+  }
+}
