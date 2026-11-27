@@ -55,7 +55,7 @@ Open an OpenCode session in a branch with a GitHub PR. If the terminal is too na
 
 ### Settings
 
-Run `/pr-status` (or **GitHub PR status settings** in the command palette, `Ctrl+P`) to change settings from the TUI. Pick a row to toggle it; changes apply immediately. Settings are saved in OpenCode's plugin storage, so they persist across restarts and apply to every session and every running TUI, not just the current one.
+Open **GitHub PR status settings** from the command palette (`Ctrl+P`) to change settings from the TUI. Pick a row to toggle it; changes apply immediately. Settings are saved in OpenCode's plugin storage, so they persist across restarts and apply to every session and every running TUI, not just the current one.
 
 | Setting           | Default | Meaning                                                                      |
 | ----------------- | ------- | ---------------------------------------------------------------------------- |
@@ -65,7 +65,7 @@ Run `/pr-status` (or **GitHub PR status settings** in the command palette, `Ctrl
 | Show “No PR” hint | Off     | Sidebar only: show a muted hint when `gh` explicitly reports no PR.          |
 | Refresh interval  | 30      | Seconds between open-PR refreshes; rounded and clamped to 15–600.            |
 
-The plugin no longer reads `options` from `cli.json`. If you configured it there earlier, those options are ignored; set them with `/pr-status` instead.
+The plugin no longer reads `options` from `cli.json`. If you configured it there earlier, those options are ignored; set them from the **GitHub PR status settings** command instead.
 
 While the selected widget is mounted, the plugin checks the local branch every five seconds. Results are cached in memory by checkout and branch. Branches with no PR retry at most every two minutes; closed or merged PRs retry at most every five minutes. Errors back off up to 15 minutes. Polling stops when the widget unmounts and pauses on terminal blur when the terminal reports focus events.
 
