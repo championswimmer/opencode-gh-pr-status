@@ -80,6 +80,6 @@ Checks cover lint, formatting, strict types, tests and the npm package contents.
 
 ## Release
 
-The release workflow follows [`pi-gh-footer`](https://github.com/championswimmer/pi-gh-footer): a `vX.Y.Z` tag on `main` runs checks and publishes using npm trusted publishing. To enable npm releases, set up `opencode-gh-pr-status` on npm and configure a trusted publisher for `championswimmer/opencode-gh-pr-status`, workflow `release.yml`. If npm requires a bootstrap release, the package owner must publish the initial version first. No `NPM_TOKEN` secret is needed by the workflow. Prerelease tags publish to `next`.
+The release workflow follows [`pi-gh-footer`](https://github.com/championswimmer/pi-gh-footer): a `vX.Y.Z` tag on `main` runs checks and publishes using npm trusted publishing. To enable npm releases, set up `opencode-gh-pr-status` on npm and configure a trusted publisher for `championswimmer/opencode-gh-pr-status`, workflow `release.yml`. If npm requires a bootstrap release, the package owner must publish the initial version first. No `NPM_TOKEN` secret is needed by the workflow. Prerelease tags publish to `next`. After publishing, the workflow creates a GitHub Release for the tag with generated release notes.
 
 Inspired by [`pi-gh-footer`](https://github.com/championswimmer/pi-gh-footer), which adds branch PR status to the Pi footer.
