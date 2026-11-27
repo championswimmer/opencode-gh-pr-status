@@ -1,6 +1,6 @@
 {
   "name": "opencode-gh-pr-status",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "description": "GitHub PR and CI status for your current branch in the OpenCode v2 TUI",
   "keywords": [
     "github",
