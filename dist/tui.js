@@ -646,9 +646,6 @@ var tui_default = Plugin.define({
         title: "GitHub PR status settings",
         group: "GitHub",
         palette: true,
-        slash: {
-          name: "pr-status"
-        },
         run: () => void openSettings(context, options, update)
       }]
     }));
