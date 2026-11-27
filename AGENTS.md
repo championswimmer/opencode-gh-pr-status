@@ -13,4 +13,4 @@ Publish to npm only through `.github/workflows/release.yml`, using npm trusted p
 
 The workflow checks that the tag matches the package version, the tagged commit is on `main`, and the rebuilt `dist/` matches the committed files. Rebuild with `npm run build:entry` and commit `dist/` when source changes: GitHub installs rely on the committed output. Do not add `build` or `prepare` scripts.
 
-The workflow does not create GitHub Releases. When creating one, use **Generate release notes** to include merged PRs.
+After a successful publish, the workflow automatically creates a GitHub Release for the tag with generated notes from merged PRs (prerelease tags are marked as prereleases). Do not create releases by hand.
